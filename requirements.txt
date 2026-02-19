@@ -1,0 +1,5 @@
+python-telegram-bot==20.7
+reportlab
+PyPDF2
+googletrans==4.0.0-rc1
+wikipedia
