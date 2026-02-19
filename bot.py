@@ -39,16 +39,15 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
 
-    choice = query.data
-    context.user_data["mode"] = choice
+    context.user_data["mode"] = query.data
 
-    if choice == "text_pdf":
+    if query.data == "text_pdf":
         await query.message.reply_text("Send the text you want to convert into PDF.")
-    elif choice == "pdf_text":
+    elif query.data == "pdf_text":
         await query.message.reply_text("Send the PDF file.")
-    elif choice == "translate":
+    elif query.data == "translate":
         await query.message.reply_text("Send text to translate into English.")
-    elif choice == "ask":
+    elif query.data == "ask":
         await query.message.reply_text("Ask your question.")
 
 
@@ -56,7 +55,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     mode = context.user_data.get("mode")
 
-    # -------- TEXT TO PDF --------
+    # TEXT TO PDF
     if mode == "text_pdf" and update.message.text:
         buffer = io.BytesIO()
         doc = SimpleDocTemplate(buffer)
@@ -69,7 +68,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             document=buffer, filename="BrainForge.pdf"
         )
 
-    # -------- PDF TO TEXT --------
+    # PDF TO TEXT
     elif mode == "pdf_text" and update.message.document:
         file = await update.message.document.get_file()
         pdf_bytes = await file.download_as_bytearray()
@@ -84,30 +83,29 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if text:
             await update.message.reply_text(text[:4000])
         else:
-            await update.message.reply_text("Could not extract text from PDF.")
+            await update.message.reply_text("Could not extract text.")
 
-    # -------- TRANSLATION --------
+    # TRANSLATE
     elif mode == "translate" and update.message.text:
         try:
             url = "https://api.mymemory.translated.net/get"
             params = {"q": update.message.text, "langpair": "auto|en"}
             response = requests.get(url, params=params).json()
             translated = response["responseData"]["translatedText"]
-
             await update.message.reply_text(f"Translated:\n{translated}")
         except:
             await update.message.reply_text("Translation failed.")
 
-    # -------- ASK QUESTION --------
+    # ASK QUESTION
     elif mode == "ask" and update.message.text:
         try:
             summary = wikipedia.summary(update.message.text, sentences=3)
             await update.message.reply_text(summary)
         except:
-            await update.message.reply_text("Sorry, no answer found.")
+            await update.message.reply_text("No answer found.")
 
     else:
-        await update.message.reply_text("Please select an option using /start.")
+        await update.message.reply_text("Type /start to choose option.")
 
 
 # -------- MAIN --------
@@ -116,9 +114,7 @@ if TOKEN:
 
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CallbackQueryHandler(button_handler))
-    app.add_handler(
-        MessageHandler(filters.TEXT | filters.Document.PDF, handle_message)
-    )
+    app.add_handler(MessageHandler(filters.TEXT | filters.Document.PDF, handle_message))
 
     print("BrainForge Bot is running...")
     app.run_polling()
